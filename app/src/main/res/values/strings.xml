@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">DayTrail</string>
+    <string name="tasks_tab">Tasks</string>
+    <string name="reminder_tab">Reminders</string>
+    <string name="notes_tab">Notes</string>
+    <string name="more_tab">More</string>
+</resources>
