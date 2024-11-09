@@ -1,51 +1,57 @@
 package com.ub.daytrail.base.bottombar
 
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
-import com.ub.daytrail.base.appdata.BottomBarData
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 
 @Composable
 fun AppBottomBar() {
-    var selectedItemIndex by rememberSaveable { mutableIntStateOf(0) }
+    val navController = rememberNavController()
+    Scaffold(
+        bottomBar = {BottomNavigationBar(navController = navController) }
+    ) { innerPadding ->
+        NavHostContainer(navController = navController, modifier = Modifier.padding(innerPadding))
+    }
+}
+
+@Composable
+fun BottomNavigationBar(navController: NavHostController) {
+    val bottomBarTabs : List<BottomBarTab> = listOf(
+        BottomBarTab.Tasks,
+        BottomBarTab.Reminders,
+        BottomBarTab.Notes,
+        BottomBarTab.More
+    )
     NavigationBar {
-        BottomBarData(context = LocalContext.current).bottomBarItems.forEachIndexed { index, item ->
+        val navBackStackEntry by navController.currentBackStackEntryAsState()
+        val currentDestination = navBackStackEntry?.destination
+
+        bottomBarTabs.forEach { screen ->
             NavigationBarItem(
-                selected = selectedItemIndex == index,
+                icon = { Icon(screen.icon, contentDescription = null) },
+                label = { Text(stringResource(screen.labelResource)) },
+                selected = currentDestination?.route == screen.route,
                 onClick = {
-                    selectedItemIndex = index
-                },
-                label = {
-                    Text(text = item.title)
-                },
-                alwaysShowLabel = true,
-                icon = {
-                    BadgedBox(
-                        badge = {
-                            if (item.badgeCount != null) {
-                                Badge {
-                                    Text(text = item.badgeCount.toString())
-                                }
-                            } else if (item.hasNews) {
-                                Badge()
-                            }
+                    navController.navigate(screen.route) {
+                        // Pop up to the start destination of the graph to avoid building up a large stack of destinations
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
                         }
-                    ) {
-                        Icon(
-                            imageVector = if (index == selectedItemIndex) {
-                                item.selectedIcon
-                            } else item.unselectedIcon,
-                            contentDescription = item.title
-                        )
+                        // Avoid multiple copies of the same destination when reselecting the same item
+                        launchSingleTop = true
+                        // Restore state when reselecting a previously selected item
+                        restoreState = true
                     }
                 }
             )
